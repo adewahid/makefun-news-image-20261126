@@ -3,8 +3,13 @@
 // library only: a tiny 5x7 bitmap font, flat coded illustrations, and a
 // hand-rolled PNG encoder (zlib + CRC32). No network, no assets, no fonts
 // from disk, so the two grader runs write byte-identical output.
-// 35 real stories: 3 LEAD + 11 PICTURE + 21 BRIEF. Press time 07:33 UTC.
-// Sources: Reuters, BBC, AP, Xinhua, Bank of Korea, UEFA, CNN.
+// 50 real stories: 3 LEAD + 14 PICTURE + 33 BRIEF. Press time 23:59 UTC.
+// v2: the full day, not the 07:33 UTC partial day. Three new picture stories
+// (Kuwait drone attack, NFL tripleheader, FIFA cyberattack) and 12 new
+// briefs; numbers strip, region bar, timeline and map updated to match.
+// The Cairo tanker flame is drawn at scale 1 so its tip stays inside the
+// lead panel (v1's scale-2 flame poked above the panel edge).
+// Sources: Reuters, BBC, AP, Xinhua, Bank of Korea, UEFA, CNN, Fox Weather, WSJ.
 
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -268,7 +273,7 @@ function leadTanker(x: number, y: number, w: number, h: number): void {
   fillRect(x + 30, y + h - 78, 150, 30, [200, 200, 205]); // tanker body
   disc(x + 60, y + h - 46, 9, INK); disc(x + 150, y + h - 46, 9, INK);
   fillRect(x + 190, y + h - 72, 34, 24, RED); // cab
-  flame(x + 105, y + h - 78, 2);
+  flame(x + 105, y + h - 74, 1); // scale 1, base 4px lower: tip sits inside the panel
   flame(x + 250, y + h - 60, 1);
   smoke(x + 105, y + 26, 3);
   drawText(x + 14, y + 12, 'RING ROAD, CAIRO', 1, [255, 220, 120]);
@@ -282,6 +287,7 @@ function picStrip(kind: string, x: number, y: number, w: number): void {
     sat: [40, 44, 60], mine: [74, 58, 40], crown: [250, 235, 190],
     plane: [150, 190, 220], rescue: [235, 225, 200], bank: [225, 235, 225],
     atom: [30, 30, 40], parade: [245, 220, 230],
+    drone: [40, 44, 60], nfl: [46, 125, 70], hack: [20, 20, 28],
   };
   fillRect(x, y, w, h, bg[kind] ?? PAPER);
   if (kind === 'chart') {
@@ -342,6 +348,30 @@ function picStrip(kind: string, x: number, y: number, w: number): void {
     line(x + 30, y + 21, x + 30, y + 25, [120, 120, 125]);
     fillRect(x + 60, y + 20, w - 70, 4, [120, 120, 125]);
     drawText(x + 66, y + 8, '100 YEARS', 1, INK);
+  } else if (kind === 'drone') {
+    // Hostile drone over a Kuwaiti air-defence site at dusk, blast below.
+    fillRect(x + 100, y + 8, 34, 6, [200, 200, 210]); // drone body
+    fillRect(x + 92, y + 5, 50, 2, [150, 150, 160]); // rotor bar
+    disc(x + 96, y + 4, 2, [150, 150, 160]); disc(x + 138, y + 4, 2, [150, 150, 160]);
+    line(x + 117, y + 14, x + 117, y + 18, [200, 200, 210]);
+    disc(x + 190, y + 16, 6, ORANGE); disc(x + 190, y + 16, 3, GOLD); // blast flash
+    drawText(x + 14, y + 9, 'KUWAIT', 1, [255, 255, 255]);
+  } else if (kind === 'nfl') {
+    // Thanksgiving tripleheader: green field, goalposts, football.
+    fillRect(x, y + 20, w, 3, [255, 255, 255]); // yard line
+    fillRect(x + 40, y + 4, 3, 16, [255, 255, 255]); fillRect(x + 52, y + 4, 3, 16, [255, 255, 255]); // goalposts
+    line(x + 40, y + 4, x + 52, y + 4, [255, 255, 255]);
+    disc(x + 130, y + 13, 7, [120, 72, 30]); // football
+    line(x + 124, y + 13, x + 136, y + 13, [255, 255, 255]);
+    drawText(x + 160, y + 9, '3 GAMES', 1, [255, 255, 255]);
+  } else if (kind === 'hack') {
+    // FIFA cyberattack: breached server screen, red warning triangle.
+    fillRect(x + 14, y + 4, 44, 18, [40, 44, 60]);
+    rect(x + 14, y + 4, 44, 18, [120, 140, 180]);
+    drawText(x + 20, y + 10, '0.1%', 1, [120, 200, 255]);
+    tri(x + 200, y + 4, x + 190, y + 22, x + 210, y + 22, RED);
+    drawText(x + 197, y + 12, '!', 1, [255, 255, 255]);
+    drawText(x + 72, y + 9, 'BREACH', 1, [255, 255, 255]);
   }
 }
 
@@ -356,25 +386,26 @@ function tagLine(x: number, y: number, num: string, region: string, status: stri
 
 // ------------------------------------------------------------ world map ----
 // Schematic world map: tan land on pale sea, red numbered pins for the
-// 14 lead + picture stories. Positions are approximate, by region.
+// 17 lead + picture stories. Positions are approximate, by region.
 function drawMap(x: number, y: number, w: number, h: number): void {
   fillRect(x, y, w, h, SEA);
   rect(x, y, w, h, INK);
   const land = (lx: number, ly: number, lw: number, lh: number) => {
     fillRect(x + lx, y + ly, lw, lh, LAND);
   };
-  land(18, 18, 78, 30); land(30, 44, 52, 22); land(10, 26, 22, 18); // N America
-  land(52, 72, 34, 44); land(60, 112, 18, 14); // S America
-  land(150, 22, 34, 22); land(160, 40, 18, 12); // Europe
-  land(148, 56, 44, 46); land(158, 98, 26, 12); // Africa
-  land(190, 16, 108, 40); land(210, 52, 70, 22); land(268, 60, 26, 16); // Asia
-  land(258, 104, 36, 18); // Australia
+  land(18, 14, 78, 24); land(30, 35, 52, 18); land(10, 21, 22, 14); // N America
+  land(52, 58, 34, 35); land(60, 90, 18, 11); // S America
+  land(150, 18, 34, 18); land(160, 32, 18, 10); // Europe
+  land(148, 45, 44, 37); land(158, 78, 26, 10); // Africa
+  land(190, 13, 108, 32); land(210, 42, 70, 18); land(268, 48, 26, 13); // Asia
+  land(258, 83, 36, 14); // Australia
   // Pins 1-3 are the LEAD stories, 4-14 the PICTURE stories, by region.
   const pins: [number, number, string][] = [
-    [44, 50, '1'], [196, 62, '2'], [172, 60, '3'], [58, 30, '4'],
-    [22, 52, '5'], [266, 42, '6'], [36, 64, '7'], [272, 88, '8'],
-    [84, 68, '9'], [60, 62, '10'], [288, 40, '11'], [272, 28, '12'],
-    [74, 44, '13'], [88, 82, '14'],
+    [44, 40, '1'], [196, 50, '2'], [172, 48, '3'], [56, 22, '4'],
+    [30, 30, '5'], [250, 40, '6'], [76, 44, '7'], [272, 70, '8'],
+    [88, 58, '9'], [40, 58, '10'], [66, 78, '11'], [272, 30, '12'],
+    [288, 48, '13'], [58, 58, '14'], [216, 66, '15'], [22, 54, '16'], // nudged: was 1px from pin 10
+    [158, 28, '17'],
   ];
   for (const [px, py, n] of pins) {
     disc(x + px, y + py, 8, RED);
@@ -388,74 +419,89 @@ interface Lead { n: string; region: string; status: string; head: string; body: 
 const LEADS: Lead[] = [
   { n: '1', region: 'WORLD', status: 'CONFIRMED',
     head: 'TRUMP UNVEILS NEW TARIFFS ON 14 ECONOMIES, CHINA HIT HARDEST',
-    body: 'WASHINGTON PROPOSES TARIFFS ON 14 PARTNERS OVER EXCESS FACTORY CAPACITY; HIGHEST RATES FOR CHINA. ASIAN MARKETS RALLY: NIKKEI +1.6%, KOREA +1.9%.',
+    body: 'TARIFFS ON 14 PARTNERS OVER EXCESS CAPACITY; HIGHEST RATES FOR CHINA. ASIA RALLIES: NIKKEI +1.6%.',
     src: 'REUTERS - BBC', draw: leadTariffs },
   { n: '2', region: 'MID EAST', status: 'REPORTED',
     head: "HOUTHIS CLAIM ATTACK ON SAUDI ARABIA'S BIGGEST REFINERY; OIL JUMPS",
-    body: "HOUTHIS SAY THEY HIT RAS TANURA, THE KINGDOM'S LARGEST REFINERY; SATELLITE IMAGES SHOW SMOKE. ARAMCO SILENT ON DAMAGE; BRENT +3.5% TO $94.61.",
+    body: 'HOUTHIS SAY THEY HIT RAS TANURA; SATELLITES SHOW SMOKE. JAZAN ALSO HIT; BRENT $96.57 THURSDAY.',
     src: 'REUTERS', draw: leadRefinery },
   { n: '3', region: 'AFRICA', status: 'CONFIRMED',
     head: 'FUEL TANKER FIRE KILLS AT LEAST 31 ON CAIRO RING ROAD',
-    body: 'TANKER OVERTURNS AND BURSTS INTO FLAMES IN WARRAQ, GIZA; 21 HURT, 39 AMBULANCES SENT. TOLL PRELIMINARY AND MAY RISE, MINISTRY SAYS.',
+    body: 'TANKER OVERTURNS AND BURSTS INTO FLAMES IN WARRAQ, GIZA; 21 HURT. EGYPTIANS MOURN; TOLL MAY RISE.',
     src: 'AP - BBC', draw: leadTanker },
 ];
 interface Pic { n: string; region: string; status: string; head: string; body: string; kind: string; }
 const PICS: Pic[] = [
-  { n: '4', region: 'N AMERICA', status: 'CONFIRMED', head: 'US ECONOMY GREW 4.3% IN Q3; CORE INFLATION HOT AT 3.3%', body: 'GDP REVISED UP; GOLD DIPS, THEN STEADIES.', kind: 'chart' },
+  { n: '4', region: 'N AMERICA', status: 'CONFIRMED', head: 'US ECONOMY GREW 4.3% IN Q3; CORE INFLATION HOT AT 3.3%', body: 'GDP REVISED UP; GOLD DIPS, STEADIES.', kind: 'chart' },
   { n: '5', region: 'N AMERICA', status: 'CONFIRMED', head: "S&P PUTS NVIDIA ON DOWNGRADE WATCH; SHARES SLIDE 3.9%", body: 'HUANG EXIT EXPOSED BOARD WEAKNESS.', kind: 'chip' },
   { n: '6', region: 'ASIA-PAC', status: 'CONFIRMED', head: "FIRST PAKISTANI ASTRONAUT BOARDS CHINA'S TIANGONG STATION", body: 'ZEESHAN ALI DOCKS ON SHENZHOU-24.', kind: 'space' },
   { n: '7', region: 'N AMERICA', status: 'CONFIRMED', head: 'US APPROVES SPACEX PLAN FOR A MILLION ORBITAL DATA CENTRES', body: "FCC CLEARS 'STARMIND' FOR AI IN ORBIT.", kind: 'sat' },
-  { n: '8', region: 'ASIA-PAC', status: 'CONFIRMED', head: '13 DEAD, 13 STILL TRAPPED IN FLOODED INDONESIAN GOLD MINE', body: 'RAIN SWAMPS ILLEGAL SHAFTS; SEARCH ON.', kind: 'mine' },
+  { n: '8', region: 'ASIA-PAC', status: 'CONFIRMED', head: '13 DEAD, 13 STILL TRAPPED IN FLOODED INDONESIAN GOLD MINE', body: 'SEARCH HALTED BY RAIN; PROBE OPENS.', kind: 'mine' },
   { n: '9', region: 'N AMERICA', status: 'CONFIRMED', head: 'JENNIFER BARRETO WINS MISS UNIVERSE 2026', body: 'FIRST MOTHER TO TAKE THE CROWN.', kind: 'crown' },
-  { n: '10', region: 'N AMERICA', status: 'CONFIRMED', head: 'SIX DEAD AFTER CESSNA 210 CRASHES INTO GULF OF MEXICO', body: 'PLANE LOST OFF HORN ISLAND, MISSISSIPPI.', kind: 'plane' },
+  { n: '10', region: 'N AMERICA', status: 'CONFIRMED', head: 'SIX DEAD AFTER CESSNA 210 CRASHES INTO GULF OF MEXICO', body: 'PLANE LOST OFF HORN ISLAND, MISS.', kind: 'plane' },
   { n: '11', region: 'S AMERICA', status: 'CONFIRMED', head: 'COLOMBIA FREES ALL HOSTAGES AFTER DAY-LONG SUPERMARKET SIEGE', body: 'ONE GUNMAN KILLED, FOUR HELD.', kind: 'rescue' },
   { n: '12', region: 'ASIA-PAC', status: 'CONFIRMED', head: 'BANK OF KOREA RAISES RATES TO 3.25%, HIGHEST IN TWO YEARS', body: 'CHIP BOOM KEEPS INFLATION ELEVATED.', kind: 'bank' },
   { n: '13', region: 'ASIA-PAC', status: 'CONFIRMED', head: 'KIM JONG UN CALLS FOR WIDER NUCLEAR WEAPONS DEPLOYMENT', body: 'N KOREA ALSO EXPELS SWISS DIPLOMAT.', kind: 'atom' },
-  { n: '14', region: 'N AMERICA', status: 'CONFIRMED', head: "MACY'S POSTPONES THANKSGIVING PARADE, FIRST TIME IN 100 YEARS", body: 'SEVERE WEATHER HALTS THE PARADE.', kind: 'parade' },
+  { n: '14', region: 'N AMERICA', status: 'CONFIRMED', head: 'THANKSGIVING STORM CUTS POWER TO 972,000', body: 'PARADE MOVED TO SATURDAY, FIRST TIME.', kind: 'parade' },
+  { n: '15', region: 'MID EAST', status: 'REPORTED', head: 'DRONE ATTACK ON KUWAIT KILLS TWO ITALIANS; IRAN BLAMED', body: 'TEHRAN DENIES ROLE IN THE ATTACK.', kind: 'drone' },
+  { n: '16', region: 'N AMERICA', status: 'CONFIRMED', head: 'NFL THANKSGIVING: THREE GAMES, THREE LAST-SECOND WINNERS', body: 'FIRST SUCH DAY IN LEAGUE HISTORY.', kind: 'nfl' },
+  { n: '17', region: 'WORLD', status: 'CONFIRMED', head: 'FIFA CONFIRMS CYBERATTACK STOLE PERSONAL DATA', body: 'LESS THAN 0.1% OF DATA AFFECTED.', kind: 'hack' },
 ];
 const NUMBERS: [string, string][] = [
-  ['31', 'PEOPLE KILLED IN THE CAIRO RING-ROAD FUEL TANKER FIRE'],
-  ['14', 'ECONOMIES TARGETED BY THE NEW US TARIFFS'],
-  ['4.3%', 'US Q3 GDP GROWTH, REVISED SHARPLY HIGHER'],
-  ['3.3%', 'US CORE PCE INFLATION IN OCTOBER, YEAR ON YEAR'],
-  ['1,000,000', 'SATELLITES THE FCC LET SPACEX DEPLOY IN ORBIT'],
-  ['13 + 13', 'MINERS DEAD AND STILL TRAPPED IN INDONESIA'],
+  ['31', 'PEOPLE KILLED IN THE CAIRO TANKER FIRE'],
+  ['14', 'ECONOMIES TARGETED BY NEW US TARIFFS'],
+  ['972,000', 'US CUSTOMERS WITHOUT POWER ON THANKSGIVING'],
+  ['2', 'ITALIANS KILLED IN KUWAIT DRONE ATTACK'],
+  ['3', 'NFL GAMES, ALL DECIDED IN THE FINAL MINUTE'],
+  ['$96.57', 'BRENT CRUDE ON THURSDAY, UP ABOUT 2%'],
 ];
 const REGIONS: [string, number, RGB][] = [
-  ['N AMERICA', 13, [52, 110, 180]], ['ASIA-PAC', 7, TEAL], ['EUROPE', 5, GOLD],
-  ['WORLD', 4, GREY], ['MID EAST', 3, RED], ['AFRICA', 2, ORANGE],
-  ['S AMERICA', 1, GREEN], ['OCEANIA', 0, [150, 150, 150]],
+  ['N AMERICA', 17, [52, 110, 180]], ['ASIA-PAC', 9, TEAL], ['EUROPE', 8, GOLD],
+  ['WORLD', 5, GREY], ['MID EAST', 5, RED], ['AFRICA', 3, ORANGE],
+  ['S AMERICA', 2, GREEN], ['OCEANIA', 1, [150, 150, 150]],
 ];
 const TIMELINE: [string, string][] = [
   ['24 NOV 21:45', 'CESSNA LOST OVER GULF OF MEXICO'],
-  ['25 NOV 03:56', 'SHENZHOU-24 DOCKS; FIRST PAKISTANI IN SPACE'],
   ['25 NOV 13:30', 'US GDP 4.3%; CORE PCE 3.3%'],
-  ['25 NOV EVENING', 'CAIRO TANKER FIRE; 31 DEAD'],
-  ['26 NOV 00:58', 'BANK OF KOREA RAISES RATE TO 3.25%'],
-  ['26 NOV 07:33', 'PRESS TIME; US ON THANKSGIVING'],
+  ['25 NOV EVENING', 'CAIRO FIRE; RAS TANURA CLAIM'],
+  ['26 NOV 00:58', 'BANK OF KOREA RATE TO 3.25%'],
+  ['26 NOV 15:40', 'FIFA CONFIRMS CYBERATTACK'],
+  ['26 NOV 23:59', 'PRESS TIME; FULL DAY COVERED'],
 ];
 const BRIEFS: string[] = [
-  'ASIAN MARKETS RALLY; NIKKEI +1.6%, KOREA +1.9%',
-  'ISRAEL JUDGES URGE DROPPING NETANYAHU CASE',
-  'POLAND PLANS NO-FLY ZONE NEAR UKRAINE BORDER',
-  'N KOREA EXPELS SWISS DIPLOMAT, CLOSES OFFICE',
-  'EU PLANS 50BN EURO TECH FUND FOR QUANTUM, AI',
-  'BOEHLY GROUP TO BUY LUKOIL ASSETS FOR $10BN',
-  'ANTHROPIC SHARES FALL BELOW $83 IPO PRICE',
-  'US JUDGE BLOCKS FCC REVIEW OF ABC STATIONS',
-  'UBER TESTS DRIVERLESS TAXIS, NO SAFETY DRIVER',
-  'BITCOIN ETF OUTFLOWS NEAR $5BN IN NOVEMBER',
-  'CHAMPIONS LEAGUE: LIVERPOOL 3-0 BRUGGE',
-  'NIGERIA SEIZES $227M METH LAB, ARRESTS SIX',
-  'US CDC REPORTS NINE MEASLES DEATHS IN 2026',
-  'AARON RODGERS RELEASED; MAY BE LAST NFL GAME',
-  'DURAN DURAN GUITARIST ANDY TAYLOR DIES, 65',
-  'UK SET TO PUBLISH NEW EU TREATIES, BBC SAYS',
-  'HONG KONG RENOVATION BLAZE KILLED 168',
-  'MUSK PLEDGES TWO SPACEX SHARES PER US CHILD',
-  'IRAN CLAIMS MINE STRIKES IN STRAIT OF HORMUZ',
-  'TRUMP PARDONS TURKEYS FREEDOM AND FEATHERS',
-  "SIX-DAY STREAK 'SMASHES' HEAT RECORD",
+  'ASIAN MARKETS RALLY; NIKKEI +1.6%',
+  'JUDGES URGE DROP NETANYAHU CASE',
+  'POLAND NO-FLY ZONE BY UKRAINE',
+  'N KOREA EXPELS SWISS DIPLOMAT',
+  'EU PLANS 50BN EURO TECH FUND',
+  'BOEHLY GROUP TO BUY LUKOIL ASSETS',
+  'ANTHROPIC BELOW $83 IPO PRICE',
+  'JUDGE BLOCKS FCC REVIEW OF ABC',
+  'UBER TESTS DRIVERLESS TAXIS IN SF',
+  'BITCOIN ETF OUTFLOWS NEAR $5BN',
+  'LIVERPOOL 3-0 BRUGGE; UTD DRAW',
+  'NIGERIA SEIZES $227M METH LAB',
+  'US CDC: 9 MEASLES DEATHS IN 2026',
+  'RODGERS RELEASED; MAY BE LAST',
+  'DURAN DURAN STAR ANDY TAYLOR DIES',
+  'UK TO PUBLISH NEW EU TREATIES',
+  'HONG KONG BLAZE KILLED 168',
+  'MUSK PLEDGES SHARES FOR US KIDS',
+  'IRAN CLAIMS HORMUZ MINE STRIKES',
+  'TRUMP PARDONS TWO TURKEYS',
+  'HEAT RECORD SMASHED IN SIX DAYS',
+  'GUINEA-BISSAU DELAYS VOTE TO 2028',
+  'IRAQ CLOSES 2 KURD BORDER POSTS',
+  'TRUMP HOLIDAY POST ATTACKS FOES',
+  'NORSE ATLANTIC SUSPENDS FLIGHTS',
+  'COURT UPHOLDS MAMDANI RENT FREEZE',
+  'BANGLADESH GARMENT WAGE PROTESTS',
+  'SHURI CASTLE MAIN HALL REOPENS',
+  'SAP MAY CUT 10,000 JOBS; HACKED',
+  'US, QATAR AID VENEZUELA ARREARS',
+  'US ARMY BLASTS 5 TONS EXPLOSIVES',
+  'QANTAS JET ABORTS SYDNEY LANDING',
+  'CANARY ISLANDS MIGRANT RECORD DAY',
 ];
 
 // -------------------------------------------------------------- layout ----
@@ -470,7 +516,7 @@ function render(): void {
 
   // Top bar.
   fillRect(8, 8, 1008, 18, INK);
-  drawTextC(512, 13, '35 STORIES - 7 REGIONS - ALL FROM THURSDAY 26 NOVEMBER 2026 - PRESS TIME 07:33 UTC', 1, [255, 255, 255]);
+  drawTextC(512, 13, '50 STORIES - 8 REGIONS - ALL FROM THURSDAY 26 NOVEMBER 2026 - PRESS TIME 23:59 UTC', 1, [255, 255, 255]);
 
   // Masthead.
   drawTextC(512, 32, 'THE WORLD IN ONE DAY', 7, INK);
@@ -492,12 +538,12 @@ function render(): void {
   // Region bar.
   let bx = 10;
   for (const [, count, col] of REGIONS) {
-    const w = Math.round((count / 35) * 1004);
+    const w = Math.round((count / 50) * 1004);
     if (w > 0) fillRect(bx, 202, w, 12, col);
     bx += w;
   }
   rect(10, 202, 1004, 12, INK);
-  drawTextC(512, 218, 'EUROPE 5 - ASIA-PAC 7 - N AMERICA 13 - MID EAST 3 - AFRICA 2 - S AMERICA 1 - WORLD 4 - OCEANIA 0', 1, INK);
+  drawTextC(512, 218, 'N AMERICA 17 - ASIA-PAC 9 - EUROPE 8 - WORLD 5 - MID EAST 5 - AFRICA 3 - S AMERICA 2 - OCEANIA 1', 1, INK);
   hline(10, 232, 1004, INK, 2);
 
   // The day in UTC.
@@ -509,52 +555,62 @@ function render(): void {
   }
   hline(10, 296, 1004, INK, 2);
 
-  // Three LEAD stories.
+  // Three LEAD stories (illustration 104 high; heads up to 3 lines).
   for (let i = 0; i < LEADS.length; i++) {
     const x = 10 + i * 336;
     const L = LEADS[i];
-    L.draw(x, 302, 328, 112);
-    rect(x, 302, 328, 112, INK);
-    tagLine(x, 422, L.n, L.region, L.status);
-    para(x, 436, L.head, 2, INK, 27, 18);
-    para(x, 492, L.body, 1, INK, 54, 10);
-    drawText(x, 524, L.src, 1, GREY);
+    L.draw(x, 302, 328, 104);
+    rect(x, 302, 328, 104, INK);
+    tagLine(x, 414, L.n, L.region, L.status);
+    para(x, 426, L.head, 2, INK, 27, 17);
+    para(x, 480, L.body, 1, INK, 54, 9);
+    drawText(x, 500, L.src, 1, GREY);
   }
-  hline(10, 534, 1004, INK, 2);
+  hline(10, 510, 1004, INK, 2);
 
-  // Picture stories: 4 columns x 3 rows.
+  // Picture stories: 4 columns x 4 rows (14 stories + 2 info boxes).
   for (let i = 0; i < PICS.length; i++) {
     const col = i % 4, row = Math.floor(i / 4);
-    const x = 10 + col * 253, y = 540 + row * 73;
+    const x = 10 + col * 253, y = 516 + row * 66;
     const P = PICS[i];
     picStrip(P.kind, x, y, 245);
     rect(x, y, 245, 26, INK);
-    para(x, y + 30, P.head, 1, INK, 40, 10);
-    drawText(x, y + 50, P.body, 1, GREY);
-    tagLine(x, y + 61, P.n, P.region, P.status);
+    para(x, y + 29, P.head, 1, INK, 40, 9);
+    drawText(x, y + 48, P.body, 1, GREY);
+    tagLine(x, y + 57, P.n, P.region, P.status);
   }
-  // 12th cell: edition box.
+  // 15th cell: edition box.
   {
-    const x = 10 + 3 * 253, y = 540 + 2 * 73;
-    fillRect(x, y, 245, 69, [232, 225, 210]);
-    rect(x, y, 245, 69, INK);
-    drawTextC(x + 122, y + 8, '35 STORIES IN', 1, INK);
-    drawTextC(x + 122, y + 20, 'THIS EDITION', 1, INK);
-    drawTextC(x + 122, y + 36, '3 LEAD - 11 PICTURE', 1, RED);
-    drawTextC(x + 122, y + 48, '21 IN BRIEF', 1, RED);
+    const x = 10 + 2 * 253, y = 516 + 3 * 66;
+    fillRect(x, y, 245, 66, [232, 225, 210]);
+    rect(x, y, 245, 66, INK);
+    drawTextC(x + 122, y + 7, '50 STORIES IN', 1, INK);
+    drawTextC(x + 122, y + 19, 'THIS EDITION', 1, INK);
+    drawTextC(x + 122, y + 34, '3 LEAD - 14 PICTURE', 1, RED);
+    drawTextC(x + 122, y + 46, '33 IN BRIEF', 1, RED);
   }
-  hline(10, 758, 1004, INK, 2);
+  // 16th cell: press-time box.
+  {
+    const x = 10 + 3 * 253, y = 516 + 3 * 66;
+    fillRect(x, y, 245, 66, [232, 225, 210]);
+    rect(x, y, 245, 66, INK);
+    drawTextC(x + 122, y + 7, 'PRESS TIME', 1, INK);
+    drawTextC(x + 122, y + 20, '23:59 UTC', 2, RED);
+    drawTextC(x + 122, y + 40, 'FULL DAY', 1, INK);
+    drawTextC(x + 122, y + 52, '26 NOV 2026', 1, INK);
+  }
+  hline(10, 786, 1004, INK, 2);
 
-  // Bottom: map + briefs.
-  drawText(10, 764, 'WHERE IT HAPPENED', 1, RED);
-  drawMap(10, 778, 320, 150);
-  drawText(10, 932, 'PINS 1-14 MATCH THE STORIES ABOVE', 1, GREY);
-  drawText(340, 764, 'ALSO - IN BRIEF', 1, RED);
+  // Bottom: map + briefs (33 briefs in 3 columns of 11).
+  drawText(10, 792, 'WHERE IT HAPPENED', 1, RED);
+  drawMap(10, 806, 320, 120);
+  drawText(10, 930, 'PINS 1-17 MATCH THE STORIES ABOVE', 1, GREY);
+  drawText(340, 792, 'ALSO - IN BRIEF', 1, RED);
   for (let i = 0; i < BRIEFS.length; i++) {
-    const col = i < 11 ? 0 : 1;
+    const col = Math.floor(i / 11);
     const row = i % 11;
-    const x = 340 + col * 340;
-    const y = 778 + row * 14;
+    const x = 340 + col * 224;
+    const y = 806 + row * 12;
     drawText(x, y, (i + 1) + '.', 1, RED);
     drawText(x + (i < 9 ? 18 : 24), y, BRIEFS[i], 1, INK);
   }
@@ -564,13 +620,12 @@ function render(): void {
   fillRect(10, 950, 1004, 40, [250, 230, 230]);
   rect(10, 950, 1004, 40, RED);
   drawText(16, 956, 'DATE CHECK', 1, RED);
-  para(16, 968, 'PRESS TIME 07:33 UTC. RAS TANURA DAMAGE UNCONFIRMED; ARAMCO SILENT. CAIRO TOLL OF 31 PRELIMINARY AND MAY RISE. 13 MINERS STILL TRAPPED; CESSNA CAUSE UNKNOWN. NO STORIES FOUND FOR OCEANIA. NOTHING AFTER 07:33 UTC IS COVERED.', 1, INK, 160, 10);
+  para(16, 968, 'PRESS TIME 23:59 UTC, FULL DAY. RAS TANURA DAMAGE UNCONFIRMED; ARAMCO SILENT. CAIRO TOLL OF 31 PRELIMINARY. 13 MINERS STILL TRAPPED; SEARCH HALTED BY RAIN. KUWAIT ATTACK: IRAN DENIES ROLE. CESSNA CAUSE UNKNOWN. ALL 8 REGIONS COVERED: 50 STORIES.', 1, INK, 160, 10);
 
   // Footer.
-  drawTextC(512, 996, 'SOURCES: REUTERS - BBC - AP - XINHUA - BANK OF KOREA - UEFA - CNN - SCENES ARE DRAWN ILLUSTRATIONS OF REPORTED EVENTS, NOT PHOTOGRAPHS', 1, GREY);
+  drawTextC(512, 996, 'SOURCES: REUTERS - BBC - AP - XINHUA - BANK OF KOREA - UEFA - CNN - FOX WEATHER - WSJ - SCENES ARE DRAWN ILLUSTRATIONS OF REPORTED EVENTS, NOT PHOTOGRAPHS', 1, GREY);
   drawTextC(512, 1008, "CONFIRMED = NAMED SOURCE REPORTS IT - REPORTED = NOT YET CONFIRMED - CLAIM = ONE SIDE'S ACCOUNT, CONTESTED", 1, GREY);
 }
-
 // --------------------------------------------------------------- main -----
 const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 mkdirSync(outDir, { recursive: true });

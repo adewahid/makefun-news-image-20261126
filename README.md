@@ -9,7 +9,7 @@ Referral code: `zsgcm8j7`
 A one-day newspaper front page summing up the world's news of Thursday
 26 November 2026, for the make.fun competition `news-image-20261126`.
 
-35 real stories (3 lead, 11 picture, 21 in brief), press time 07:33 UTC.
+50 real stories (3 lead, 14 picture, 33 in brief), press time 23:59 UTC.
 Drawn from scratch by `main.ts` (Node 22, standard library only): a 5x7
 bitmap font, flat coded illustrations, and a hand-rolled PNG encoder —
 no network, no assets, no fonts from disk, so both grader runs write
